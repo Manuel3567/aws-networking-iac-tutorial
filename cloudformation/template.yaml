@@ -86,6 +86,59 @@ Resources:
       RouteTableId: !Ref myPrivateRouteTable1a
       SubnetId: !Ref myPrivateSubnet1a
 
+  ########################## private subnet 1b
+  myPrivateSubnet1b:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !GetAtt myVPC.VpcId
+      CidrBlock: 10.0.2.0/24
+      AvailabilityZone: "eu-central-1b"
+      MapPublicIpOnLaunch: false
+      Tags:
+      - Key: "Name"
+        Value: myPrivateSubnet1b
+
+  myPrivateRouteTable1b:  
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId: !Ref myVPC
+      Tags: 
+      - Key: Name
+        Value: my-private-rtb-1b
+
+  myPrivate1bRouteTableSubnetAssociation:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      RouteTableId: !Ref myPrivateRouteTable1b
+      SubnetId: !Ref myPrivateSubnet1b
+
+  NATGateway:
+    Type: AWS::EC2::NatGateway
+    Properties:
+        AllocationId: !GetAtt NATGatewayEIP.AllocationId
+        SubnetId: !Ref myPublicSubnet1a
+        Tags:
+        - Key: Name
+          Value: my-nat-gw-1a
+
+  NATGatewayEIP:
+    Type: AWS::EC2::EIP
+    Properties:
+        Domain: vpc
+
+  RouteNATGateway1a:
+    Type: AWS::EC2::Route
+    Properties:
+        RouteTableId: !Ref myPrivateRouteTable1a
+        DestinationCidrBlock: '0.0.0.0/0'
+        NatGatewayId: !Ref NATGateway
+
+  RouteNATGateway1b:
+    Type: AWS::EC2::Route
+    Properties:
+        RouteTableId: !Ref myPrivateRouteTable1b
+        DestinationCidrBlock: '0.0.0.0/0'
+        NatGatewayId: !Ref NATGateway
 
 Outputs:
   MyVpcId:
