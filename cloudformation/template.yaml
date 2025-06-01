@@ -140,6 +140,34 @@ Resources:
         DestinationCidrBlock: '0.0.0.0/0'
         NatGatewayId: !Ref NATGateway
 
+  S3VPCEndpoint:
+    Type: AWS::EC2::VPCEndpoint
+    Properties:
+      ServiceName: !Sub com.amazonaws.${AWS::Region}.s3
+      VpcId: !Ref myVPC
+      RouteTableIds:
+        - !Ref myPrivateRouteTable1a
+        - !Ref myPrivateRouteTable1b
+        - !Ref myPublicRouteTable
+      VpcEndpointType: Gateway
+      Tags:
+        - Key: Name
+          Value: s3-gw
+
+  DynamoDBVPCEndpoint:
+    Type: AWS::EC2::VPCEndpoint
+    Properties:
+      ServiceName: !Sub com.amazonaws.${AWS::Region}.dynamodb
+      VpcId: !Ref myVPC
+      RouteTableIds:
+        - !Ref myPrivateRouteTable1a
+        - !Ref myPrivateRouteTable1b
+        - !Ref myPublicRouteTable
+      VpcEndpointType: Gateway
+      Tags:
+        - Key: Name
+          Value: dynamodb-gw
+
 Outputs:
   MyVpcId:
     Value: !Ref myVPC
