@@ -1,0 +1,175 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: Basic AWS CloudFormation template
+
+Resources:
+
+  myVPC:
+    Type: AWS::EC2::VPC
+    Properties:
+      CidrBlock: "10.0.0.0/16"
+      EnableDnsHostnames: true
+      Tags: 
+        - Key: "Name"
+          Value: "my-vpc"
+
+  myPublicSubnet1a:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !GetAtt myVPC.VpcId
+      CidrBlock: 10.0.0.0/24
+      AvailabilityZone: "eu-central-1a"
+      MapPublicIpOnLaunch: true
+      Tags:
+      - Key: "Name"
+        Value: myPublicSubnet1a
+
+  myInternetGateway:
+    Type: AWS::EC2::InternetGateway
+    Properties:
+      Tags:
+      - Key: Name
+        Value: my-igw
+  attachIgw:
+    Type: AWS::EC2::VPCGatewayAttachment
+    Properties:
+      VpcId: !Ref myVPC
+      InternetGatewayId: !Ref myInternetGateway
+
+  myPublicRouteTable:  
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId: !Ref myVPC
+      Tags: 
+      - Key: Name
+        Value: my-public-rtb
+
+  myIgwRoute:
+    Type: AWS::EC2::Route
+    DependsOn: attachIgw
+    Properties:
+       RouteTableId: !Ref myPublicRouteTable
+       DestinationCidrBlock: 0.0.0.0/0
+       GatewayId: !Ref myInternetGateway
+
+  myPublic1aRouteTableSubnetAssociation:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      RouteTableId: !Ref myPublicRouteTable
+      SubnetId: !Ref myPublicSubnet1a
+  
+
+
+
+  ########################## private subnet 1a
+  myPrivateSubnet1a:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !GetAtt myVPC.VpcId
+      CidrBlock: 10.0.1.0/24
+      AvailabilityZone: "eu-central-1a"
+      MapPublicIpOnLaunch: false
+      Tags:
+      - Key: "Name"
+        Value: myPrivateSubnet1a
+
+  myPrivateRouteTable1a:  
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId: !Ref myVPC
+      Tags: 
+      - Key: Name
+        Value: my-private-rtb-1a
+
+  myPrivate1aRouteTableSubnetAssociation:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      RouteTableId: !Ref myPrivateRouteTable1a
+      SubnetId: !Ref myPrivateSubnet1a
+
+  ########################## private subnet 1b
+  myPrivateSubnet1b:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !GetAtt myVPC.VpcId
+      CidrBlock: 10.0.2.0/24
+      AvailabilityZone: "eu-central-1b"
+      MapPublicIpOnLaunch: false
+      Tags:
+      - Key: "Name"
+        Value: myPrivateSubnet1b
+
+  myPrivateRouteTable1b:  
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId: !Ref myVPC
+      Tags: 
+      - Key: Name
+        Value: my-private-rtb-1b
+
+  myPrivate1bRouteTableSubnetAssociation:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      RouteTableId: !Ref myPrivateRouteTable1b
+      SubnetId: !Ref myPrivateSubnet1b
+
+  NATGateway:
+    Type: AWS::EC2::NatGateway
+    Properties:
+        AllocationId: !GetAtt NATGatewayEIP.AllocationId
+        SubnetId: !Ref myPublicSubnet1a
+        Tags:
+        - Key: Name
+          Value: my-nat-gw-1a
+
+  NATGatewayEIP:
+    Type: AWS::EC2::EIP
+    Properties:
+        Domain: vpc
+
+  RouteNATGateway1a:
+    Type: AWS::EC2::Route
+    Properties:
+        RouteTableId: !Ref myPrivateRouteTable1a
+        DestinationCidrBlock: '0.0.0.0/0'
+        NatGatewayId: !Ref NATGateway
+
+  RouteNATGateway1b:
+    Type: AWS::EC2::Route
+    Properties:
+        RouteTableId: !Ref myPrivateRouteTable1b
+        DestinationCidrBlock: '0.0.0.0/0'
+        NatGatewayId: !Ref NATGateway
+
+  S3VPCEndpoint:
+    Type: AWS::EC2::VPCEndpoint
+    Properties:
+      ServiceName: !Sub com.amazonaws.${AWS::Region}.s3
+      VpcId: !Ref myVPC
+      RouteTableIds:
+        - !Ref myPrivateRouteTable1a
+        - !Ref myPrivateRouteTable1b
+        - !Ref myPublicRouteTable
+      VpcEndpointType: Gateway
+      Tags:
+        - Key: Name
+          Value: s3-gw
+
+  DynamoDBVPCEndpoint:
+    Type: AWS::EC2::VPCEndpoint
+    Properties:
+      ServiceName: !Sub com.amazonaws.${AWS::Region}.dynamodb
+      VpcId: !Ref myVPC
+      RouteTableIds:
+        - !Ref myPrivateRouteTable1a
+        - !Ref myPrivateRouteTable1b
+        - !Ref myPublicRouteTable
+      VpcEndpointType: Gateway
+      Tags:
+        - Key: Name
+          Value: dynamodb-gw
+
+Outputs:
+  MyVpcId:
+    Value: !Ref myVPC
+
+
