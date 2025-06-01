@@ -2,16 +2,64 @@ AWSTemplateFormatVersion: '2010-09-09'
 Description: Basic AWS CloudFormation template
 
 Resources:
-  MyVPC:
+
+  myVPC:
     Type: AWS::EC2::VPC
     Properties:
       CidrBlock: "10.0.0.0/16"
-      EnableDnsHostnames: True
+      EnableDnsHostnames: true
       Tags: 
         - Key: "Name"
           Value: "my-vpc"
+
+  myPublicSubnet1a:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !GetAtt myVPC.VpcId
+      CidrBlock: 10.0.0.0/24
+      AvailabilityZone: "eu-central-1a"
+      MapPublicIpOnLaunch: true
+      Tags:
+      - Key: "Name"
+        Value: myPublicSubnet1a
+
+  myInternetGateway:
+    Type: AWS::EC2::InternetGateway
+    Properties:
+      Tags:
+      - Key: Name
+        Value: my-igw
+  attachIgw:
+    Type: AWS::EC2::VPCGatewayAttachment
+    Properties:
+      VpcId: !Ref myVPC
+      InternetGatewayId: !Ref myInternetGateway
+
+  myPublicRouteTable:  
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId: !Ref myVPC
+      Tags: 
+      - Key: Name
+        Value: my-public-rtb
+
+  myIgwRoute:
+    Type: AWS::EC2::Route
+    DependsOn: attachIgw
+    Properties:
+       RouteTableId: !Ref myPublicRouteTable
+       DestinationCidrBlock: 0.0.0.0/0
+       GatewayId: !Ref myInternetGateway
+
+  myPublic1aRouteTableSubnetAssociation:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      RouteTableId: !Ref myPublicRouteTable
+      SubnetId: !Ref myPublicSubnet1a
+
+
 Outputs:
   MyVpcId:
-    Value: !Ref MyVPC
+    Value: !Ref myVPC
 
 
