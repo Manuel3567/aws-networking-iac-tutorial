@@ -56,6 +56,35 @@ Resources:
     Properties:
       RouteTableId: !Ref myPublicRouteTable
       SubnetId: !Ref myPublicSubnet1a
+  
+
+
+
+  ########################## private subnet 1a
+  myPrivateSubnet1a:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !GetAtt myVPC.VpcId
+      CidrBlock: 10.0.1.0/24
+      AvailabilityZone: "eu-central-1a"
+      MapPublicIpOnLaunch: false
+      Tags:
+      - Key: "Name"
+        Value: myPrivateSubnet1a
+
+  myPrivateRouteTable1a:  
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId: !Ref myVPC
+      Tags: 
+      - Key: Name
+        Value: my-private-rtb-1a
+
+  myPrivate1aRouteTableSubnetAssociation:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      RouteTableId: !Ref myPrivateRouteTable1a
+      SubnetId: !Ref myPrivateSubnet1a
 
 
 Outputs:
